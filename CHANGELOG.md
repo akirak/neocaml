@@ -2,6 +2,14 @@
 
 ## main (unreleased)
 
+### Changes
+
+- [#80](https://github.com/bbatsov/neocaml/pull/80): Use the hybrid forward-sexp function on every Emacs version, so `C-M-f` moves over whole keyword-led forms (`fun`, `match`, `if`, etc.) on Emacs 31+ instead of stopping after the keyword.
+
+### Bug fixes
+
+- [#79](https://github.com/bbatsov/neocaml/pull/79): Fix a segfault on Emacs 31.1 when font-locking a buffer containing a builtin type or value (`let x : int = 42` was enough to trigger it).
+
 ## 0.10.0 (2026-07-10)
 
 ### New features
