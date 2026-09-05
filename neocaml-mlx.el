@@ -296,12 +296,6 @@ the mode degrades gracefully to plain `neocaml-mode' behaviour.
   ;; Full OCaml setup: ocaml parser, font-lock, indent, navigation, ...
   (neocaml--setup-mode 'ocaml)
 
-  ;; Disable regex-based syntax propertization to avoid narrowing conflicts
-  ;; with tree-sitter's embedded TSX parsers. Tree-sitter handles all syntax
-  ;; highlighting in MLX files, so we don't need the OCaml syntax-propertize
-  ;; function that `neocaml--setup-mode' sets up.
-  (setq-local syntax-propertize-function nil)
-
   ;; Layer the tsx font-lock and indent rules on top of the OCaml ones.
   (when (neocaml-mlx--injection-available-p)
     (let ((tsx-settings (neocaml-mlx--tsx-font-lock-settings)))
