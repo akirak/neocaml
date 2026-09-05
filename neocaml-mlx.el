@@ -215,13 +215,14 @@ Returns nil when injection is not available."
 
 (defun neocaml-mlx--font-lock-feature-list ()
   "Return the feature list merging `ocaml' and `tsx' feature levels.
-The tsx-only `jsx' feature is placed on the deepest level so that
-its override rules can repaint the host grammar's faces on the JSX
-text."
-  '((comment definition declaration)
-    (keyword string type escape-sequence)
-    (attribute builtin constant expression identifier number pattern property)
-    (operator bracket delimiter variable label function jsx)))
+The current buffer is expected to have been configured by
+`neocaml--setup-mode'.  Obtain the TSX list from `tsx-ts-mode' so changes
+to either mode's feature levels are reflected here automatically."
+  (let ((ocaml-features treesit-font-lock-feature-list)
+        (tsx-features (with-temp-buffer
+                        (tsx-ts-mode)
+                        treesit-font-lock-feature-list)))
+    (treesit-merge-font-lock-feature-list ocaml-features tsx-features)))
 
 ;;; Indentation
 

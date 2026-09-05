@@ -85,6 +85,18 @@ end"
         (expect (memq 'jsx (mapcan #'identity treesit-font-lock-feature-list))
                 :to-be-truthy)))
 
+    (it "preserves OCaml levels and enables JSX at level 3"
+      (with-neocaml-test-buffer neocaml-mlx-mode neocaml-mlx-test--react-component
+        (expect (memq 'escape-sequence
+                      (nth 2 treesit-font-lock-feature-list))
+                :to-be-truthy)
+        (expect (memq 'property
+                      (nth 3 treesit-font-lock-feature-list))
+                :to-be-truthy)
+        (expect (memq 'jsx
+                      (nth 2 treesit-font-lock-feature-list))
+                :to-be-truthy)))
+
     (it "injects a tsx range covering the JSX element"
       (with-neocaml-test-buffer neocaml-mlx-mode neocaml-mlx-test--react-component
         (treesit-update-ranges)
@@ -107,7 +119,7 @@ end"
     (it "fontifies JSX tag names with `typescript-ts-jsx-tag-face'"
       (with-temp-buffer
         (insert neocaml-mlx-test--react-component)
-        (let ((treesit-font-lock-level 4))
+        (let ((treesit-font-lock-level 3))
           (neocaml-mlx-mode))
         (font-lock-ensure)
         (goto-char (point-min))
