@@ -25,7 +25,7 @@
 ;; `[@react.component]'), finds the JSX element they contain, and feeds
 ;; just that region to a `tsx' parser, reusing the built-in
 ;; `typescript-ts-mode' font-lock rules for the embedded JSX.  See
-;; `neocaml-mlx-jsx-attribute-regex' to teach it about other PPXes.
+;; `neocaml-mlx-jsx-attribute-regexp' to teach it about other PPXes.
 ;;
 ;; For the host grammar, see
 ;; https://github.com/tree-sitter/tree-sitter-ocaml.
@@ -102,7 +102,7 @@ even if already installed."
 
 ;;; JSX injection
 
-(defcustom neocaml-mlx-jsx-attribute-regex "react\\.component"
+(defcustom neocaml-mlx-jsx-attribute-regexp "react\\.component"
   "Regexp matched against an OCaml attribute id to detect JSX bindings.
 When a `let' binding carries an attribute whose id matches this regexp
 \(the `react.component' part of `[@react.component]'), neocaml-mlx
@@ -157,7 +157,7 @@ recomputes ranges for the whole buffer, which encompasses that region."
            (treesit-buffer-root-node 'ocaml)
            `((value_definition
               (attribute (attribute_id) @_jsx_attr
-                         (:match ,neocaml-mlx-jsx-attribute-regex
+                         (:match ,neocaml-mlx-jsx-attribute-regexp
                                  @_jsx_attr))
               (let_binding) @mlx
               (:match "<[A-Za-z_]" @mlx)))
@@ -273,7 +273,7 @@ The translation from neovim indent queries to Emacs treesit rules:
 `neocaml-mlx-mode' is `neocaml-mode' plus highlighting and indentation
 for embedded JSX.  When the `tsx' tree-sitter grammar is installed,
 `let' bindings marked with a JSX-transform attribute (see
-`neocaml-mlx-jsx-attribute-regex', default `[@react.component]') have
+`neocaml-mlx-jsx-attribute-regexp', default `[@react.component]') have
 their JSX bodies highlighted via language injection using the built-in
 `typescript-ts-mode' font-lock rules, with JSX-aware indentation rules
 appended for the injected regions.  If the `tsx' grammar is absent,
