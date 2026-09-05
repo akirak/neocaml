@@ -137,38 +137,45 @@ This function avoids narrowing to prevent conflicts with `syntax-propertize'
 during jit-lock fontification."
   (let ((start (treesit-node-start node))
         (end (treesit-node-end node)))
-    (save-excursion
-      (goto-char start)
-      (when (re-search-forward (rx "<" (in "A-Za-z_")) end t)
-        (let ((jsx-start (match-beginning 0)))
-          (when (eq (char-after end) ?>)
-            (setq end (1+ end)))
-          (goto-char end)
-          (when (re-search-backward ">" jsx-start t)
-            (list (cons jsx-start (match-end 0)))))))))
+    (save-restriction
+      (widen)
+      (save-excursion
+        (goto-char start)
+        (when (re-search-forward (rx "<" (in "A-Za-z_")) end t)
+          (let ((jsx-start (match-beginning 0)))
+            (when (eq (char-after end) ?>)
+              (setq end (1+ end)))
+            (goto-char end)
+            (when (re-search-backward ">" jsx-start t)
+              (list (cons jsx-start (match-end 0))))))))))
 
 (defun neocaml-mlx--set-ranges (_start _end)
   "Set `tsx' parser ranges for JSX component bindings.
 START and END are described in `treesit-range-rules'.  This function
 recomputes ranges for the whole buffer, which encompasses that region."
-  (let* ((tsx-parser (treesit-parser-create 'tsx))
-         (nodes
-          (treesit-query-capture
-           (treesit-buffer-root-node 'ocaml)
-           `((value_definition
-              (attribute (attribute_id) @_jsx_attr
-                         (:match ,neocaml-mlx-jsx-attribute-regexp
-                                 @_jsx_attr))
-              (let_binding) @mlx
-              (:match "<[A-Za-z_]" @mlx)))
-           nil nil t))
-         (ranges (mapcan (lambda (node)
-                           (neocaml-mlx--jsx-range node nil))
-                         nodes)))
-    ;; An empty list makes a parser cover the whole buffer, so use a
-    ;; degenerate range when there is no JSX to parse.
-    (treesit-parser-set-included-ranges
-     tsx-parser (or ranges `((,(point-min) . ,(point-min)))))))
+  (save-restriction
+    ;; Range functions can run while syntax-propertize has narrowed the
+    ;; buffer.  Querying in that restriction both misses definitions and
+    ;; can let query predicates invoke syntax-propertize out of order.
+    (widen)
+    (let* ((tsx-parser (treesit-parser-create 'tsx))
+           (nodes
+            (treesit-query-capture
+             (treesit-buffer-root-node 'ocaml)
+             `((value_definition
+                (attribute (attribute_id) @_jsx_attr
+                           (:match ,neocaml-mlx-jsx-attribute-regexp
+                                   @_jsx_attr))
+                (let_binding) @mlx
+                (:match "<[A-Za-z_]" @mlx)))
+             nil nil t))
+           (ranges (mapcan (lambda (node)
+                             (neocaml-mlx--jsx-range node nil))
+                           nodes)))
+      ;; An empty list makes a parser cover the whole buffer, so use a
+      ;; degenerate range when there is no JSX to parse.
+      (treesit-parser-set-included-ranges
+       tsx-parser (or ranges `((,(point-min) . ,(point-min))))))))
 
 (defun neocaml-mlx--range-settings ()
   "Return range settings for injecting `tsx' into OCaml JSX regions.

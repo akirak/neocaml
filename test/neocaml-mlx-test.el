@@ -110,6 +110,25 @@ end"
             (expect (string-search "<h1>" text) :to-be-truthy)
             (expect (string-search "</h1>" text) :to-be-truthy)))))
 
+    (it "computes injection ranges from the widened buffer"
+      (with-neocaml-test-buffer neocaml-mlx-mode neocaml-mlx-test--react-component
+        (goto-char (point-min))
+        (search-forward "<h1>")
+        (let ((narrow-start (match-beginning 0))
+              (narrow-end (match-end 0)))
+          (narrow-to-region narrow-start narrow-end)
+          (treesit-update-ranges)
+          (expect (cons (point-min) (point-max))
+                  :to-equal (cons narrow-start narrow-end))
+          (widen)
+          (let* ((range (car (neocaml-mlx-test--real-ranges)))
+                 (text (buffer-substring (car range) (cdr range))))
+            (expect text :to-equal
+                    (concat "<div>\n"
+                            "      <h1> (React.string \"Hello, React.ml!\") "
+                            "</h1>\n"
+                            "    </div>"))))))
+
     (it "does not inject into bindings without JSX"
       (with-neocaml-test-buffer neocaml-mlx-mode
           "let[@react.component] make () = print_endline \"plain\""
