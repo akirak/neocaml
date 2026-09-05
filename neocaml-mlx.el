@@ -118,8 +118,7 @@ which excludes the surrounding `[@' and `]'."
 
 (defun neocaml-mlx--injection-available-p ()
   "Non-nil if `tsx' language injection is available.
-Requires Emacs 30+ (for `treesit-range-rules' with `:embed' and
-`:range-fn') and the `tsx' tree-sitter grammar."
+Requires Emacs 30+ and the `tsx' tree-sitter grammar."
   (and (>= emacs-major-version 30)
        (treesit-language-available-p 'tsx)))
 
@@ -138,6 +137,29 @@ during jit-lock fontification."
       (when (re-search-forward (rx "<" (in "A-Za-z_")) end t)
         (list (cons (match-beginning 0) end))))))
 
+(defun neocaml-mlx--set-ranges (_start _end)
+  "Set `tsx' parser ranges for JSX component bindings.
+START and END are described in `treesit-range-rules'.  This function
+recomputes ranges for the whole buffer, which encompasses that region."
+  (let* ((tsx-parser (treesit-parser-create 'tsx))
+         (nodes
+          (treesit-query-capture
+           (treesit-buffer-root-node 'ocaml)
+           `((value_definition
+              (attribute (attribute_id) @_jsx_attr
+                         (:match ,neocaml-mlx-jsx-attribute-regex
+                                 @_jsx_attr))
+              (let_binding) @mlx
+              (:match "<[A-Za-z_]" @mlx)))
+           nil nil t))
+         (ranges (mapcan (lambda (node)
+                           (neocaml-mlx--jsx-range node nil))
+                         nodes)))
+    ;; An empty list makes a parser cover the whole buffer, so use a
+    ;; degenerate range when there is no JSX to parse.
+    (treesit-parser-set-included-ranges
+     tsx-parser (or ranges `((,(point-min) . ,(point-min)))))))
+
 (defun neocaml-mlx--range-settings ()
   "Return range settings for injecting `tsx' into OCaml JSX regions.
 Returns nil when injection is not available.  The ranges share a single
@@ -145,15 +167,7 @@ Returns nil when injection is not available.  The ranges share a single
 covering the entire JSX region from the first tag to the end of the
 let binding."
   (when (neocaml-mlx--injection-available-p)
-    (treesit-range-rules
-     :embed 'tsx
-     :host 'ocaml
-     :range-fn #'neocaml-mlx--jsx-range
-     `((value_definition
-        (attribute (attribute_id) @_jsx_attr
-                   (:match ,neocaml-mlx-jsx-attribute-regex @_jsx_attr))
-        (let_binding) @mlx
-        (:match "<[A-Za-z_]" @mlx))))))
+    (treesit-range-rules #'neocaml-mlx--set-ranges)))
 
 ;;; Font-lock
 
