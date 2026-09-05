@@ -56,6 +56,20 @@ end"
       (expect (provided-mode-derived-p major-mode 'prog-mode)
               :to-be-truthy)))
 
+  (it "includes a closing delimiter at the recovered node boundary"
+    (with-temp-buffer
+      (insert "let make () = <div></div>\n;;")
+      (let ((node-start (point-min)))
+        (search-backward ">")
+        (let ((node-end (point)))
+          (cl-letf (((symbol-function 'treesit-node-start)
+                     (lambda (_node) node-start))
+                    ((symbol-function 'treesit-node-end)
+                     (lambda (_node) node-end)))
+            (let* ((range (car (neocaml-mlx--jsx-range 'node nil)))
+                   (text (buffer-substring (car range) (cdr range))))
+              (expect text :to-equal "<div></div>")))))))
+
   (describe "when the tsx grammar is available"
     (before-all
       (unless (neocaml-mlx--injection-available-p)

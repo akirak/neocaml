@@ -126,7 +126,12 @@ Requires Emacs 30+ and the `tsx' tree-sitter grammar."
   "Return the JSX region contained in NODE as a list of (BEG . END).
 NODE is the `let_binding' of a React (or other JSX-transform) component
 binding.  We locate the first `<tag' that opens a JSX element and span
-up to the end of NODE.  Return nil when NODE contains no JSX.
+up to the last `>' at or immediately after NODE's end.  Return nil when
+NODE contains no JSX.
+
+The OCaml parser's error recovery can place the end of NODE immediately
+before the final `>' of a closing tag.  Account for that boundary before
+looking backwards for the last delimiter.
 
 This function avoids narrowing to prevent conflicts with `syntax-propertize'
 during jit-lock fontification."
@@ -135,7 +140,12 @@ during jit-lock fontification."
     (save-excursion
       (goto-char start)
       (when (re-search-forward (rx "<" (in "A-Za-z_")) end t)
-        (list (cons (match-beginning 0) end))))))
+        (let ((jsx-start (match-beginning 0)))
+          (when (eq (char-after end) ?>)
+            (setq end (1+ end)))
+          (goto-char end)
+          (when (re-search-backward ">" jsx-start t)
+            (list (cons jsx-start (match-end 0)))))))))
 
 (defun neocaml-mlx--set-ranges (_start _end)
   "Set `tsx' parser ranges for JSX component bindings.
